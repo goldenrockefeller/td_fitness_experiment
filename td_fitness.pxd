@@ -14,7 +14,7 @@ cpdef double list_sum(list my_list) except *
 )
 cpdef list_multiply(list my_list, double val)
 
-cdef random_cache_size
+cdef Py_ssize_t random_cache_size
 cdef Py_ssize_t random_uniform_counter
 cdef double[::1] np_random_uniform_cache
 
