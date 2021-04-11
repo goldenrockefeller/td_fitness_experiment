@@ -1,11 +1,17 @@
 from td_fitness import *
 import itertools
 
-experiment_name = "A1"
+experiment_name = "Notest"
+
+# mods_to_mix = [
+#     (short, medium, long),
+#     (atc, asc, mtc, msc, imtc, imsc, qtc, qsc, uqtc, uqsc),
+#     (no_noise, little_noise, some_noise, much_noise)
+# ]
 
 mods_to_mix = [
-    (short, medium, long),
-    (atc, asc, mtc, msc, imtc, imsc, qtc, qsc, uqtc, uqsc),
+    (short,),
+    (atc, asc,),
     (no_noise, little_noise, some_noise, much_noise)
 ]
 
@@ -15,6 +21,6 @@ runners = [
     for setup_combo in itertools.product(*mods_to_mix)
 ]
 
-
-for runner in runners:
-    runner.new_run()
+for i in range(3):
+    for runner in runners:
+        runner.new_run()
