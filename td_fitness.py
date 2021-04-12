@@ -1130,7 +1130,7 @@ class Runner:
         domain = Domain()
         domain.domain_noise = domain_noise
         domain.n_steps = n_steps
-        n_epochs = 100 * n_steps
+        n_epochs = 10 * n_steps
         mutation_factor = 0.01
         n_policies = 50
 
