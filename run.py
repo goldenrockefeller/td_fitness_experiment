@@ -1,7 +1,7 @@
 from td_fitness import *
 import itertools
 
-experiment_name = "Notest"
+experiment_name = "A1"
 
 # mods_to_mix = [
 #     (short, medium, long),
@@ -11,7 +11,7 @@ experiment_name = "Notest"
 
 mods_to_mix = [
     (short,),
-    (atc, asc,),
+    (uqtc, uqsc,),
     (no_noise, little_noise, some_noise, much_noise)
 ]
 
