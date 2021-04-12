@@ -742,7 +742,7 @@ class UqBaseCritic():
         self.q_critic.update(states, actions, rewards)
 
     def eval(self, states, actions):
-        return list_multiply(list_sum(self.step_evals(states, actions)), 1. / len(states))
+        return list_sum(self.step_evals(states, actions)) / len(states)
 
     def step_evals(self, states, actions):
         q_step_evals = self.q_critic.step_evals(states, actions)
