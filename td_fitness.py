@@ -107,17 +107,17 @@ def mdp_policy_values(P_policy, P_transition, R_expected, n_steps):
 
 
     for step_id in range(n_steps):
-        # prev_V = 1. * V
-        # V *= 0
-        # for action_id in range(n_actions):
-        #     V += (
-        #         P_policy[action_id]
-        #         * (
-        #             np.matmul(P_transition[action_id], prev_V)
-        #             + R_expected[action_id]
-        #         )
-        #     )
-        V = np.matmul(P_transition[action_id], V) + R_expected_reduced
+        prev_V = 1. * V
+        V *= 0
+        for action_id in range(n_actions):
+            V += (
+                P_policy[action_id]
+                * (
+                    np.matmul(P_transition[action_id], prev_V)
+                    + R_expected[action_id]
+                )
+            )
+        # V = np.matmul(P_transition_reduced, V) + R_expected_reduced
 
     return V
 
