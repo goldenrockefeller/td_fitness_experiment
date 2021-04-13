@@ -9,9 +9,18 @@ experiment_name = "A2"
 #     (no_noise, little_noise, some_noise, much_noise)
 # ]
 
+def soft_imtc(args):
+    args["critic"] = InexactMidTrajCritic()
+    args["critic"].learning_rate_scheme.learning_rate /= 22.360679775
+
+def soft_imsc(args):
+    args["critic"] = InexactMidSteppedCritic(args["n_steps"])
+    args["critic"].learning_rate_scheme = SteppedLearningRateScheme(args["critic"].core)
+    args["critic"].learning_rate_scheme.time_horizon *= 22.360679775
+
 mods_to_mix = [
     (long,),
-    (imtc, imsc, uqtc, uqsc,),
+    (soft_imtc, soft_imsc),
     (mega_noise,)
 ]
 
