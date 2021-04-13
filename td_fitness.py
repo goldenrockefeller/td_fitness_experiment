@@ -1247,6 +1247,10 @@ def some_noise(args):
 def much_noise(args):
     args["domain_noise"] = 1.
 
+def mega_noise(args):
+    args["domain_noise"] = 100.
+
+
 def mtc(args):
     args["critic"] = MidTrajCritic()
 

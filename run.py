@@ -10,9 +10,9 @@ experiment_name = "A1"
 # ]
 
 mods_to_mix = [
-    (medium, long),
-    (atc, asc, imtc, imsc, qtc, qsc, uqtc, uqsc, uqtc, uqsc,),
-    (no_noise, little_noise, some_noise, much_noise)
+    (long,),
+    (imtc, imsc, qtc, qsc, uqtc, uqsc,),
+    (mega_noise,)
 ]
 
 
@@ -21,5 +21,6 @@ runners = [
     for setup_combo in itertools.product(*mods_to_mix)
 ]
 
-for runner in runners:
-    runner.new_run()
+for i in range(3):
+    for runner in runners:
+        runner.new_run()
