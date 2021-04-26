@@ -1,3 +1,4 @@
+
 import numpy as np
 from random import shuffle
 import os
@@ -506,6 +507,104 @@ class QSteppedCritic(AveragedSteppedCritic):
                 )
             )
 
+class BiQTrajCritic(AveragedTrajCritic):
+
+    def update(self, states, actions, rewards):
+        n_steps = len(states)
+
+        step_evals = self.step_evals(states, actions)
+
+        learning_rates = self.learning_rate_scheme.learning_rates(states, actions)
+
+        if n_steps >= 2:
+            self.core[(states[-1], actions[-1])] += (
+                learning_rates[-1]
+                * (
+                    rewards[-1]
+                    + step_evals[-2]
+                    - step_evals[-1]
+                )
+            )
+
+            self.core[(states[0], actions[0])] += (
+                learning_rates[0]
+                * (
+                    rewards[0]
+                    + step_evals[1]
+                    - step_evals[0]
+                )
+            )
+
+
+            for step_id in range(1, n_steps - 1):
+                self.core[(states[step_id], actions[step_id])] += (
+                    learning_rates[step_id]
+                    * (
+                        rewards[step_id]
+                        + 0.5 * step_evals[step_id + 1]
+                        + 0.5 * step_evals[step_id - 1]
+                        - step_evals[step_id]
+                    )
+                )
+        else:
+            # nsteps = 1
+            raise (
+                NotImplementedError(
+                    "BiQ is currently implemented for when the number of steps "
+                    "is greater than 1."
+                )
+            )
+
+
+class BiQSteppedCritic(AveragedSteppedCritic):
+
+
+
+    def update(self, states, actions, rewards):
+        n_steps = len(states)
+
+        step_evals = self.step_evals(states, actions)
+
+        learning_rates = self.learning_rate_scheme.learning_rates(states, actions)
+
+        if n_steps >= 2:
+            self.core[(states[-1], actions[-1])][-1] += (
+                learning_rates[-1]
+                * (
+                    rewards[-1]
+                    + step_evals[-2]
+                    - step_evals[-1]
+                )
+            )
+
+            self.core[(states[0], actions[0])][0] += (
+                learning_rates[0]
+                * (
+                    rewards[0]
+                    + step_evals[1]
+                    - step_evals[0]
+                )
+            )
+
+
+            for step_id in range(1, n_steps - 1):
+                self.core[(states[step_id], actions[step_id])][step_id] += (
+                    learning_rates[step_id]
+                    * (
+                        rewards[step_id]
+                        + 0.5 * step_evals[step_id + 1]
+                        + 0.5 * step_evals[step_id - 1]
+                        - step_evals[step_id]
+                    )
+                )
+        else:
+            # nsteps = 1
+            raise (
+                NotImplementedError(
+                    "BiQ is currently implemented for when the number of steps "
+                    "is greater than 1."
+                )
+            )
 
 class VTrajCritic(AveragedTrajCritic):
     def __init__(self):
@@ -1270,6 +1369,13 @@ def qtc(args):
 
 def qsc(args):
     args["critic"] = QSteppedCritic(args["n_steps"])
+    args["critic"].learning_rate_scheme = SteppedLearningRateScheme(args["critic"].core)
+
+def biqtc(args):
+    args["critic"] = BiQTrajCritic()
+
+def biqsc(args):
+    args["critic"] = BiQSteppedCritic(args["n_steps"])
     args["critic"].learning_rate_scheme = SteppedLearningRateScheme(args["critic"].core)
 
 def uqtc(args):

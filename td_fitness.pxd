@@ -1,3 +1,5 @@
+
+
 cimport cython
 
 
@@ -270,6 +272,29 @@ cdef class QSteppedCritic(AveragedSteppedCritic):
         step_id = Py_ssize_t
     )
     cpdef update(self, list states, list actions, list rewards)
+
+cdef class BiQTrajCritic(AveragedTrajCritic):
+
+    @cython.locals(
+        n_steps = Py_ssize_t,
+        step_evals = list,
+        learning_rates = list,
+        step_id = Py_ssize_t
+    )
+    cpdef update(self, list states, list actions, list rewards)
+
+
+cdef class BiQSteppedCritic(AveragedSteppedCritic):
+
+
+    @cython.locals(
+        n_steps = Py_ssize_t,
+        step_evals = list,
+        learning_rates = list,
+        step_id = Py_ssize_t
+    )
+    cpdef update(self, list states, list actions, list rewards)
+
 
 cdef class UTrajCritic(AveragedTrajCritic):
 
