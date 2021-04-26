@@ -20,7 +20,7 @@ def soft_imsc(args):
 
 mods_to_mix = [
     (long,),
-    (soft_imtc, soft_imsc),
+    (biqtc, biqsc),
     (mega_noise,)
 ]
 
