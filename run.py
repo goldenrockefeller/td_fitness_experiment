@@ -1,35 +1,48 @@
 from td_fitness import *
+from runner import *
+from mods import *
 import itertools
-
-experiment_name = "A2"
-
-# mods_to_mix = [
-#     (short, medium, long),
-#     (atc, asc, mtc, msc, imtc, imsc, qtc, qsc, uqtc, uqsc),
-#     (no_noise, little_noise, some_noise, much_noise)
-# ]
-
-def soft_imtc(args):
-    args["critic"] = InexactMidTrajCritic()
-    args["critic"].learning_rate_scheme.learning_rate /= 22.360679775
-
-def soft_imsc(args):
-    args["critic"] = InexactMidSteppedCritic(args["n_steps"])
-    args["critic"].learning_rate_scheme = SteppedLearningRateScheme(args["critic"].core)
-    args["critic"].learning_rate_scheme.time_horizon *= 22.360679775
-
-mods_to_mix = [
-    (long,),
-    (biqtc, biqsc),
-    (mega_noise,)
-]
+import random
+from multiprocessing import Process
+from time import sleep
+import sys
 
 
-runners = [
-    Runner(experiment_name, setup_combo)
-    for setup_combo in itertools.product(*mods_to_mix)
-]
+def run():
+    experiment_name = "B1"
+    n_stats_run_per_process = 1
 
-for i in range(3):
-    for runner in runners:
-        runner.new_run()
+
+    mods_to_mix = [
+        (medium,), # length is 100.
+        (atc, asc, mtc, msc, imtc, imsc, qtc, qsc, uqtc, uqsc, biqtc, biqsc),
+        (much_noise,) # noise is 10.
+    ]
+
+
+    runners = [
+        Runner(experiment_name, setup_combo)
+        for setup_combo in itertools.product(*mods_to_mix)
+    ]
+
+    random.shuffle(runners)
+
+    for i in range(n_stats_run_per_process):
+        for runner in runners:
+            runner.new_run()
+
+
+
+if __name__ == '__main__':
+    n_processes = int(sys.argv[1])
+    print(f"Number of processes: {n_processes}")
+
+    processes = [Process(target = run) for _ in range(n_processes)]
+
+    for process in processes:
+        process.start()
+        sleep(2)
+
+
+    for process in processes:
+        process.join()

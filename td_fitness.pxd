@@ -63,77 +63,28 @@ cdef class ReducedLearningRateScheme():
         n_steps = Py_ssize_t
     )
     cpdef list learning_rates(self, list states, list actions)
-#
-# class TrajLearningRateScheme(LearningRateScheme):
-#     cdef dict __dict__
-#     cdef public dict denoms
-#     cdef public double epsilon
-#     cdef public double time_horizon
-#     cdef public double rate_boost
-#
-#
-#     @cython.locals(
-#         visitation = dict,
-#         rates = list,
-#         denoms_prev = dict,
-#         state = Py_ssize_t
-#         action = Py_ssize_t
-#
-#     )
-#     cpdef list learning_rates(self, list states, list actions)
-#     def learning_rates(self, states, actions):
-#         rates = [0. for _ in range(len(states))]
-#         denoms_prev = self.denoms.copy()
-#         visitation = {key: 0. for key in self.denoms}
-#
-#         for state, action in zip(states, actions):
-#             visitation[(state, action)] += 1.
-#
-#         for key in self.denoms:
-#             self.denoms[key] += visitation[(state, action)] * visitation[(state, action)]
-#
-#
-#         for step_id, (state, action) in enumerate(zip(states, actions)):
-#             rates[step_id] = (
-#                 self.rate_boost
-#                 / (self.denoms[(state, action)] + self.epsilon)
-#             )
-#
-#
-#         # for key in self.denoms:
-#         #     self.denoms[key] *= 1. - 1./self.time_horizon
-#
-#         total_relative_denom = 0.
-#
-#         for key in self.denoms:
-#             total_relative_denom += (
-#                 visitation[(state, action)] * visitation[(state, action)]
-#                 / (self.denoms[key] + self.epsilon)
-#             )
-#
-#
-#         for step_id, key in enumerate(zip(states, actions)):
-#             relative_denom = (
-#                 visitation[(state, action)] * visitation[(state, action)]
-#                 / (self.denoms[key] + self.epsilon)
-#             )
-#             time_share = relative_denom / (total_relative_denom + self.epsilon)
-#
-#             rates[step_id] *= time_share
-#
-#
-#
-#         for key in self.denoms:
-#             relative_denom = (
-#                 visitation[(state, action)] * visitation[(state, action)]
-#                 / (self.denoms[key] + self.epsilon)
-#             )
-#             time_share = relative_denom / (total_relative_denom + self.epsilon)
-#
-#             self.denoms[key] *= 1. - time_share/self.time_horizon
-#
-#         return rates
-#
+
+cdef class TrajLearningRateScheme():
+    cdef dict __dict__
+    cdef public dict denoms
+    cdef public double time_horizon
+    cdef public double epsilon
+    cdef public double rate_boost
+
+
+    @cython.locals(
+        rates = list,
+        step_id = Py_ssize_t,
+        demons_prev = dict,
+        visitation = dict,
+        local_pressure = dict,
+        sum_of_sqr_rel_pressure = double,
+        sum_rel_pressure = double,
+        relative_pressure = double,
+        step_size = double
+    )
+    cpdef list learning_rates(self, list states, list actions)
+
 cdef class SteppedLearningRateScheme():
     cdef dict __dict__
     cdef public dict denoms

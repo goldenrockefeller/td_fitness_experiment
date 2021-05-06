@@ -204,8 +204,9 @@ class TrajLearningRateScheme():
         self.denoms = {key: 0. for key in ref_model}
         self.epsilon = epsilon
         self.time_horizon = time_horizon
-        self.rate_boost = 10. #replace with nesterov
-        # need to use weighted averaging
+        self.rate_boost = 1.
+
+
 
     def copy(self):
         scheme = self.__class__(self.denoms)
@@ -221,52 +222,60 @@ class TrajLearningRateScheme():
         rates = [0. for _ in range(len(states))]
         denoms_prev = self.denoms.copy()
         visitation = {key: 0. for key in self.denoms}
+        local_pressure = {key: 0. for key in self.denoms}
 
-        for state, action in zip(states, actions):
-            visitation[(state, action)] += 1.
+        sum_of_sqr_rel_pressure = 0.
+        sum_rel_pressure = 0.
+
 
         for key in self.denoms:
-            self.denoms[key] += visitation[(state, action)] * visitation[(state, action)]
+            self.denoms[key] *= 1. - 1./self.time_horizon
+
+        for state, action in zip(states, actions):
+            if (state, action) in self.denoms:
+                visitation[(state, action)] += 1.
+            else:
+                visitation[state] += 1.
+
+        for key in self.denoms:
+            local_pressure[key] = (
+                visitation[key]
+                * visitation[key]
+            )
+
+            relative_pressure = (
+                local_pressure[key]
+                / (
+                    local_pressure[key]
+                    + self.epsilon
+                    + denoms_prev[key]
+                )
+            )
+
+            sum_of_sqr_rel_pressure += relative_pressure * relative_pressure
+            sum_rel_pressure += relative_pressure
+
+        step_size = (
+            sum_rel_pressure * sum_rel_pressure
+            / (sum_of_sqr_rel_pressure + self.epsilon)
+        )
+
+
+        for key in self.denoms:
+            self.denoms[key] += step_size * local_pressure[key]
 
 
         for step_id, (state, action) in enumerate(zip(states, actions)):
-            rates[step_id] = (
-                self.rate_boost
-                / (self.denoms[(state, action)] + self.epsilon)
-            )
-
-
-        # for key in self.denoms:
-        #     self.denoms[key] *= 1. - 1./self.time_horizon
-
-        total_relative_denom = 0.
-
-        for key in self.denoms:
-            total_relative_denom += (
-                visitation[(state, action)] * visitation[(state, action)]
-                / (self.denoms[key] + self.epsilon)
-            )
-
-
-        for step_id, key in enumerate(zip(states, actions)):
-            relative_denom = (
-                visitation[(state, action)] * visitation[(state, action)]
-                / (self.denoms[key] + self.epsilon)
-            )
-            time_share = relative_denom / (total_relative_denom + self.epsilon)
-
-            rates[step_id] *= time_share
-
-
-
-        for key in self.denoms:
-            relative_denom = (
-                visitation[(state, action)] * visitation[(state, action)]
-                / (self.denoms[key] + self.epsilon)
-            )
-            time_share = relative_denom / (total_relative_denom + self.epsilon)
-
-            self.denoms[key] *= 1. - time_share/self.time_horizon
+            if (state, action) in self.denoms:
+                rates[step_id] = (
+                    self.rate_boost
+                    / (self.denoms[(state, action)] + self.epsilon)
+                )
+            else:
+                rates[step_id] = (
+                    self.rate_boost
+                    / (self.denoms[state] + self.epsilon)
+                )
 
         return rates
 
@@ -875,21 +884,6 @@ class UqSteppedCritic(UqBaseCritic):
         return critic
 
 
-def phenotypes_from_population(population):
-    phenotypes = [None] * len(population)
-
-    for i in range(len(population)):
-        phenotypes[i] = {"policy" : population[i]}
-
-    return phenotypes
-
-def population_from_phenotypes(phenotypes):
-    population = [None] * len(phenotypes)
-
-    for i in range(len(phenotypes)):
-        population[i] = phenotypes[i]["policy"]
-
-    return population
 
 class Domain:
     def __init__(self):
@@ -1141,6 +1135,24 @@ class Domain:
 
         return states, actions, rewards
 
+
+def phenotypes_from_population(population):
+    phenotypes = [None] * len(population)
+
+    for i in range(len(population)):
+        phenotypes[i] = {"policy" : population[i]}
+
+    return phenotypes
+
+def population_from_phenotypes(phenotypes):
+    population = [None] * len(phenotypes)
+
+    for i in range(len(phenotypes)):
+        population[i] = phenotypes[i]["policy"]
+
+    return population
+
+
 def new_policy():
     policy = {}
     policy[State.UP] = 0.5
@@ -1175,222 +1187,3 @@ def binary_tornament(phenotypes, mutation_factor):
             new_phenotypes.append(mutant(phenotypes[i+1], mutation_factor))
 
     return new_phenotypes
-
-
-class Runner:
-    def __init__(self, experiment_name, setup_funcs):
-        self.setup_funcs = setup_funcs
-        self.stat_runs_completed = 0
-        self.experiment_name = experiment_name
-        setup_names = []
-        for setup_func in setup_funcs:
-            setup_names.append(setup_func.__name__)
-        self.trial_name = "_".join(setup_names)
-
-        # Create experiment folder if not already created.
-        try:
-            os.makedirs(os.path.join("log", experiment_name))
-        except OSError as exc: # Guard against race condition
-            if exc.errno != errno.EEXIST:
-                raise
-
-        # Save experiment details
-        filenames_in_folder = (
-            glob.glob("./**.py", recursive = True)
-            + glob.glob("./**.pyx", recursive = True)
-            + glob.glob("./**.pxd", recursive = True))
-        for filename in filenames_in_folder:
-            copy(filename, os.path.join("log", experiment_name, filename))
-
-
-    def new_run(self):
-        datetime_str = (
-            dt.datetime.now().isoformat()
-            .replace("-", "").replace(':', '').replace(".", "_")
-        )
-
-        print(
-            "Starting trial.\n"
-            f"experiment: {self.experiment_name}\n"
-            f"trial: {self.trial_name}\n"
-            f"stat run #: {self.stat_runs_completed}\n"
-            "datetime: {datetime_str}\n\n"
-            .format(**locals()) )
-
-        args = {}
-
-        for setup_func in self.setup_funcs:
-            setup_func(args)
-
-        critic = args["critic"]
-        n_steps = args["n_steps"]
-        domain_noise = args["domain_noise"]
-
-        domain = Domain()
-        domain.domain_noise = domain_noise
-        domain.n_steps = n_steps
-        n_epochs = 10 * n_steps
-        mutation_factor = 0.01
-        n_policies = 50
-
-        population = [new_policy() for _ in range(n_policies)]
-
-        n_epochs_elapsed = list(range(1, n_epochs + 1))
-        n_training_episodes_elapsed = [n_epochs_elapsed[epoch_id] * n_policies for epoch_id in range(n_epochs)]
-        n_training_steps_elapsed = [n_epochs_elapsed[epoch_id] * n_steps * n_policies for epoch_id in range(n_epochs)]
-        max_expected_value = domain.max_value()
-        max_expected_returns = [max_expected_value for _ in range(n_epochs)]
-        scores = []
-        expected_returns = []
-        critic_evals = []
-        critic_score_losses = []
-        critic_expected_return_losses = []
-
-
-        for epoch in range(n_epochs):
-            phenotypes = phenotypes_from_population(population)
-
-            new_critic = critic.copy()
-
-            for phenotype in phenotypes:
-                policy = phenotype["policy"]
-                states, actions, rewards = domain.execute(policy)
-                fitness = critic.eval(states, actions)
-                new_critic.update(states, actions, rewards)
-                phenotype["fitness"] = fitness
-
-            critic = new_critic
-            phenotypes = binary_tornament(phenotypes, mutation_factor)
-            population = population_from_phenotypes(phenotypes)
-
-            candidate_policy = population[0]
-            states, actions, rewards = domain.execute(candidate_policy)
-            #print(f"Score: {domain.expected_value(candidate_policy)}")
-
-            score = list_sum(rewards)
-            expected_return = domain.expected_value(candidate_policy)
-            critic_eval = critic.eval(states, actions)
-            critic_score_loss = 0.5 * (critic_eval - score) ** 2
-            critic_expected_return_loss = 0.5 * (critic_eval - expected_return) ** 2
-
-            scores.append(score)
-            expected_returns.append(expected_return)
-            critic_evals.append(  critic.eval(states, actions) )
-            critic_score_losses.append( critic_score_loss )
-            critic_expected_return_losses.append( critic_expected_return_loss)
-
-            # print(critic.learning_rate_scheme.denoms)
-        # end for epoch in range(n_epochs):
-
-        save_filename = (
-            os.path.join(
-                "log",
-                self.experiment_name,
-                self.trial_name,
-                f"record_{datetime_str}.csv"
-            )
-        )
-
-        # Create File Directory if it doesn't exist
-        if not os.path.exists(os.path.dirname(save_filename)):
-            try:
-                os.makedirs(os.path.dirname(save_filename))
-            except OSError as exc: # Guard against race condition
-                if exc.errno != errno.EEXIST:
-                    raise
-
-        with open(save_filename, 'w', newline='') as save_file:
-            writer = csv.writer(save_file)
-
-            writer.writerow(['n_epochs_elapsed'] + n_epochs_elapsed)
-            writer.writerow(['n_training_episodes_elapsed'] + n_training_episodes_elapsed)
-            writer.writerow(['n_training_steps_elapsed'] + n_training_steps_elapsed)
-
-            writer.writerow(['max_expected_returns'] + max_expected_returns)
-            writer.writerow(['scores'] + scores)
-            writer.writerow(['expected_returns'] + expected_returns)
-            writer.writerow(['critic_evals'] + critic_evals)
-            writer.writerow(['critic_score_losses'] + critic_score_losses)
-            writer.writerow(['critic_expected_return_losses'] + critic_expected_return_losses)
-
-        self.stat_runs_completed += 1
-
-
-        self.critic = critic
-
-def none(args):
-    args["critic"] = MidTrajCritic()
-    args["n_steps"] = 50
-    args["domain_noise"] = 0.
-
-def short(args):
-    args["n_steps"] = 50
-
-def medium(args):
-    args["n_steps"] = 100
-
-def long(args):
-    args["n_steps"] = 500
-
-
-
-def no_noise(args):
-    args["domain_noise"] = 0.
-
-def little_noise(args):
-    args["domain_noise"] = 1./16
-
-def some_noise(args):
-    args["domain_noise"] = 1./4
-
-def much_noise(args):
-    args["domain_noise"] = 1.
-
-def mega_noise(args):
-    args["domain_noise"] = 100.
-
-
-def mtc(args):
-    args["critic"] = MidTrajCritic()
-
-def msc(args):
-    args["critic"] = MidSteppedCritic(args["n_steps"])
-    args["critic"].learning_rate_scheme = SteppedLearningRateScheme(args["critic"].core)
-
-def imtc(args):
-    args["critic"] = InexactMidTrajCritic()
-
-def imsc(args):
-    args["critic"] = InexactMidSteppedCritic(args["n_steps"])
-    args["critic"].learning_rate_scheme = SteppedLearningRateScheme(args["critic"].core)
-
-def qtc(args):
-    args["critic"] = QTrajCritic()
-
-def qsc(args):
-    args["critic"] = QSteppedCritic(args["n_steps"])
-    args["critic"].learning_rate_scheme = SteppedLearningRateScheme(args["critic"].core)
-
-def biqtc(args):
-    args["critic"] = BiQTrajCritic()
-
-def biqsc(args):
-    args["critic"] = BiQSteppedCritic(args["n_steps"])
-    args["critic"].learning_rate_scheme = SteppedLearningRateScheme(args["critic"].core)
-
-def uqtc(args):
-    args["critic"] = UqTrajCritic()
-
-def uqsc(args):
-    args["critic"] = UqSteppedCritic(args["n_steps"])
-    args["critic"].u_critic.learning_rate_scheme = SteppedLearningRateScheme(args["critic"].u_critic.core)
-    args["critic"].q_critic.learning_rate_scheme = SteppedLearningRateScheme(args["critic"].q_critic.core)
-
-
-def atc(args):
-    args["critic"] = ATrajCritic()
-
-def asc(args):
-    args["critic"] = ASteppedCritic(args["n_steps"])
-    args["critic"].v_critic.learning_rate_scheme = SteppedLearningRateScheme(args["critic"].v_critic.core)
-    args["critic"].q_critic.learning_rate_scheme = SteppedLearningRateScheme(args["critic"].q_critic.core)
