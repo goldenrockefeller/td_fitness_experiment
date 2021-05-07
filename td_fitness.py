@@ -198,46 +198,49 @@ class ReducedLearningRateScheme():
         n_steps =  len(states)
         return [self.learning_rate / n_steps for _ in range(len(states))]
 
-class TrajLearningRateScheme():
+class TrajMonteLearningRateScheme():
 
-    def __init__(self, ref_model, time_horizon = 10., epsilon = 1.e-9):
+    def __init__(self, ref_model, time_horizon = 100.):
         self.denoms = {key: 0. for key in ref_model}
-        self.epsilon = epsilon
+        self.last_update_seen = {key: 0 for key in ref_model}
+        self.n_updates_elapsed = 0
         self.time_horizon = time_horizon
-        self.rate_boost = 1.
-
-
 
     def copy(self):
         scheme = self.__class__(self.denoms)
         scheme.denoms = self.denoms.copy()
-        scheme.epsilon = self.epsilon
+        scheme.last_update_seen = self.last_update_seen.copy()
+        scheme.n_updates_elapsed = 0
         scheme.time_horizon = self.time_horizon
-        scheme.rate_boost = self.rate_boost
 
         return scheme
 
 
     def learning_rates(self, states, actions):
         rates = [0. for _ in range(len(states))]
-        denoms_prev = self.denoms.copy()
-        visitation = {key: 0. for key in self.denoms}
-        local_pressure = {key: 0. for key in self.denoms}
+        visitation = {}
+        local_pressure = {}
 
         sum_of_sqr_rel_pressure = 0.
         sum_rel_pressure = 0.
 
 
-        for key in self.denoms:
-            self.denoms[key] *= 1. - 1./self.time_horizon
+        for state, action in zip(states, actions):
+            self.denoms[(state, action)] *= (
+                (1. - 1. / self.time_horizon)
+                ** (self.n_updates_elapsed - self.last_update_seen[(state, action)])
+            )
+            self.last_update_seen[(state, action)] = self.n_updates_elapsed
+
+            visitation[(state, action)] = 0.
+            local_pressure[(state, action)] = 0.
+
 
         for state, action in zip(states, actions):
-            if (state, action) in self.denoms:
-                visitation[(state, action)] += 1.
-            else:
-                visitation[state] += 1.
+            visitation[(state, action)] += 1.
 
-        for key in self.denoms:
+
+        for key in visitation:
             local_pressure[key] = (
                 visitation[key]
                 * visitation[key]
@@ -247,49 +250,98 @@ class TrajLearningRateScheme():
                 local_pressure[key]
                 / (
                     local_pressure[key]
-                    + self.epsilon
-                    + denoms_prev[key]
+                    +  self.denoms[key]
                 )
             )
 
             sum_of_sqr_rel_pressure += relative_pressure * relative_pressure
             sum_rel_pressure += relative_pressure
 
-        step_size = (
-            sum_rel_pressure * sum_rel_pressure
-            / (sum_of_sqr_rel_pressure + self.epsilon)
-        )
+        step_size = sum_rel_pressure * sum_rel_pressure/ sum_of_sqr_rel_pressure
 
 
-        for key in self.denoms:
+        for key in visitation:
             self.denoms[key] += step_size * local_pressure[key]
 
 
         for step_id, (state, action) in enumerate(zip(states, actions)):
-            if (state, action) in self.denoms:
-                rates[step_id] = (
-                    self.rate_boost
-                    / (self.denoms[(state, action)] + self.epsilon)
-                )
-            else:
-                rates[step_id] = (
-                    self.rate_boost
-                    / (self.denoms[state] + self.epsilon)
-                )
+            rates[step_id] = 1. / self.denoms[(state, action)]
 
+        self.n_updates_elapsed += 1
         return rates
 
-class SteppedLearningRateScheme():
+class SteppedMonteLearningRateScheme():
 
     def __init__(self, ref_model, time_horizon = 100.):
         self.denoms = {key: [0. for _ in range(len(ref_model[key]))] for key in ref_model}
+        self.last_update_seen =  {key: [0 for _ in range(len(ref_model[key]))] for key in ref_model}
+        self.n_updates_elapsed = 0
         self.time_horizon = time_horizon
 
 
     def copy(self):
         scheme = self.__class__(self.denoms)
         scheme.denoms = {key : self.denoms[key].copy() for key in self.denoms}
-        scheme.time_horizon = scheme.time_horizon
+        scheme.last_update_seen = {key : self.last_update_seen[key].copy() for key in self.last_update_seen}
+        scheme.n_updates_elapsed = 0
+        scheme.time_horizon = self.time_horizon
+
+        return scheme
+
+    def learning_rates(self, states, actions):
+        rates = [0. for _ in range(len(states))]
+        visited = []
+
+        sum_of_sqr_rel_pressure = 0.
+        sum_rel_pressure = 0.
+
+
+        for step_id, (state, action) in enumerate(zip(states, actions)):
+            self.denoms[(state, action)][step_id] *= (
+                (1. - 1. / self.time_horizon)
+                ** (self.n_updates_elapsed - self.last_update_seen[(state, action)][step_id])
+            )
+            self.last_update_seen[(state, action)][step_id] = self.n_updates_elapsed
+
+            visited.append(((state, action), step_id))
+
+        for key, step_id in visited:
+            relative_pressure = 1./ (1. +  self.denoms[key][step_id])
+
+            sum_of_sqr_rel_pressure += relative_pressure * relative_pressure
+            sum_rel_pressure += relative_pressure
+
+        step_size = (
+            sum_rel_pressure * sum_rel_pressure
+            / sum_of_sqr_rel_pressure
+        )
+
+        for key, step_id in visited:
+            self.denoms[key][step_id] += step_size
+
+
+        for step_id, (state, action) in enumerate(zip(states, actions)):
+            rates[step_id] = 1. / (self.denoms[(state, action)][step_id])
+
+        self.n_updates_elapsed += 1
+        return rates
+
+class TrajTabularLearningRateScheme():
+    def __init__(self, ref_model, has_only_state_as_key = False, time_horizon = 100.):
+        self.denoms = {key: 0. for key in ref_model}
+        self.last_update_seen = {key: 0 for key in ref_model}
+        self.n_updates_elapsed = 0
+        self.time_horizon = time_horizon
+        self.has_only_state_as_key = has_only_state_as_key
+
+
+    def copy(self):
+        scheme = self.__class__(self.denoms)
+        scheme.denoms = self.denoms.copy()
+        scheme.last_update_seen = self.last_update_seen.copy()
+        scheme.n_updates_elapsed = self.n_updates_elapsed
+        scheme.time_horizon = self.time_horizon
+        scheme.has_only_state_as_key = self.has_only_state_as_key
 
         return scheme
 
@@ -297,17 +349,94 @@ class SteppedLearningRateScheme():
     def learning_rates(self, states, actions):
         rates = [0. for _ in range(len(states))]
 
+        for state, action in zip(states, actions):
+            if self.has_only_state_as_key:
+                self.denoms[state] *= (
+                    (1. - 1. / self.time_horizon)
+                    ** (self.n_updates_elapsed - self.last_update_seen[state])
+                )
+                self.last_update_seen[state] = self.n_updates_elapsed
+
+            else:
+                self.denoms[(state, action)] *= (
+                    (1. - 1. / self.time_horizon)
+                    ** (self.n_updates_elapsed - self.last_update_seen[(state, action)])
+                )
+                self.last_update_seen[(state, action)] = self.n_updates_elapsed
+
+        for state, action in zip(states, actions):
+            if self.has_only_state_as_key:
+                self.denoms[state] += 1
+
+            else:
+                self.denoms[(state, action)] += 1
 
         for step_id, (state, action) in enumerate(zip(states, actions)):
-            if (state, action) in self.denoms:
-                self.denoms[(state, action)][step_id] += 1
-                rates[step_id] = 1. / self.denoms[(state, action)][step_id]
-                self.denoms[(state, action)][step_id] *= 1. - 1. / self.time_horizon
-            else:
-                self.denoms[state][step_id] += 1
-                rates[step_id] = 1. / self.denoms[state][step_id]
-                self.denoms[state][step_id] *= 1. - 1. / self.time_horizon
+            if self.has_only_state_as_key:
+                rates[step_id] = 1. / self.denoms[state]
 
+            else:
+                rates[step_id] = 1. / self.denoms[(state, action)]
+
+        self.n_updates_elapsed += 1
+        return rates
+
+
+
+class SteppedTabularLearningRateScheme():
+
+    def __init__(self, ref_model, has_only_state_as_key = False, time_horizon = 100.):
+        self.denoms = {key: [0. for _ in range(len(ref_model[key]))] for key in ref_model}
+        self.last_update_seen =  {key: [0 for _ in range(len(ref_model[key]))] for key in ref_model}
+        self.n_updates_elapsed = 0
+        self.time_horizon = time_horizon
+        self.has_only_state_as_key = has_only_state_as_key
+
+
+    def copy(self):
+        scheme = self.__class__(self.denoms)
+        scheme.denoms = {key : self.denoms[key].copy() for key in self.denoms}
+        scheme.last_update_seen = {key : self.last_update_seen[key].copy() for key in self.last_update_seen}
+        scheme.n_updates_elapsed = self.n_updates_elapsed
+        scheme.time_horizon = self.time_horizon
+        scheme.has_only_state_as_key = self.has_only_state_as_key
+
+        return scheme
+
+
+    def learning_rates(self, states, actions):
+        rates = [0. for _ in range(len(states))]
+
+        for step_id, (state, action) in enumerate(zip(states, actions)):
+            if self.has_only_state_as_key:
+                self.denoms[state][step_id] *= (
+                    (1. - 1. / self.time_horizon)
+                    ** (self.n_updates_elapsed - self.last_update_seen[state][step_id])
+                )
+                self.last_update_seen[state][step_id] = self.n_updates_elapsed
+
+            else:
+                self.denoms[(state, action)][step_id] *= (
+                    (1. - 1. / self.time_horizon)
+                    ** (self.n_updates_elapsed - self.last_update_seen[(state, action)][step_id])
+                )
+                self.last_update_seen[(state, action)][step_id] = self.n_updates_elapsed
+
+        for step_id, (state, action) in enumerate(zip(states, actions)):
+            if self.has_only_state_as_key:
+                self.denoms[state][step_id] += 1
+
+            else:
+                self.denoms[(state, action)][step_id] += 1
+
+        for step_id, (state, action) in enumerate(zip(states, actions)):
+            if self.has_only_state_as_key:
+                rates[step_id] = 1. / self.denoms[state][step_id]
+
+            else:
+                rates[step_id] = 1. / self.denoms[(state, action)][step_id]
+
+        self.n_updates_elapsed += 1
         return rates
 
 
@@ -418,7 +547,7 @@ class MidSteppedCritic(SteppedCritic):
         for step_id in range(n_steps):
             state = states[step_id]
             action = actions[step_id]
-            delta = error * learning_rates[step_id] / len(states)
+            delta = error * learning_rates[step_id]
             self.core[(state, action)][step_id] += delta
 
 class InexactMidTrajCritic(AveragedTrajCritic):

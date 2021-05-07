@@ -64,38 +64,77 @@ cdef class ReducedLearningRateScheme():
     )
     cpdef list learning_rates(self, list states, list actions)
 
-cdef class TrajLearningRateScheme():
+cdef class TrajMonteLearningRateScheme():
     cdef dict __dict__
     cdef public dict denoms
+    cdef public dict last_update_seen
+    cdef public Py_ssize_t n_updates_elapsed
     cdef public double time_horizon
-    cdef public double epsilon
-    cdef public double rate_boost
 
 
     @cython.locals(
         rates = list,
-        step_id = Py_ssize_t,
-        demons_prev = dict,
         visitation = dict,
         local_pressure = dict,
+        relative_pressure = double,
         sum_of_sqr_rel_pressure = double,
         sum_rel_pressure = double,
-        relative_pressure = double,
-        step_size = double
+        step_size = double,
+        step_id = Py_ssize_t
     )
-    cpdef list learning_rates(self, list states, list actions)
+    cpdef learning_rates(self ,list states, list actions)
 
-cdef class SteppedLearningRateScheme():
+
+cdef class SteppedMonteLearningRateScheme():
     cdef dict __dict__
     cdef public dict denoms
+    cdef public dict last_update_seen
+    cdef public Py_ssize_t n_updates_elapsed
     cdef public double time_horizon
+
+    @cython.locals(
+        rates = list,
+        visited = list,
+        relative_pressure = double,
+        sum_of_sqr_rel_pressure = double,
+        sum_rel_pressure = double,
+        step_size = double,
+        step_id = Py_ssize_t
+    )
+    cpdef learning_rates(self, list states, list actions)
+
+
+cdef class TrajTabularLearningRateScheme():
+    cdef dict __dict__
+    cdef public dict denoms
+    cdef public dict last_update_seen
+    cdef public Py_ssize_t n_updates_elapsed
+    cdef public double time_horizon
+    cdef public bint has_only_state_as_key
 
 
     @cython.locals(
         rates = list,
         step_id = Py_ssize_t
     )
-    cpdef list learning_rates(self, list states, list actions)
+    cpdef learning_rates(self, list states, list actions)
+
+
+
+
+cdef class SteppedTabularLearningRateScheme():
+    cdef dict __dict__
+    cdef public dict denoms
+    cdef public dict last_update_seen
+    cdef public Py_ssize_t n_updates_elapsed
+    cdef public double time_horizon
+    cdef public bint has_only_state_as_key
+
+    @cython.locals(
+        rates = list,
+        step_id = Py_ssize_t
+    )
+    cpdef learning_rates(self, list states, list actions)
 
 cdef class TrajCritic():
     cdef dict __dict__

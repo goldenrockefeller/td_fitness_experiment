@@ -33,55 +33,55 @@ def mega_noise(args):
 
 def mtc(args):
     args["critic"] = MidTrajCritic()
-    args["critic"].learning_rate_scheme = TrajLearningRateScheme(args["critic"].core)
+    args["critic"].learning_rate_scheme = TrajMonteLearningRateScheme(args["critic"].core)
 
 def msc(args):
     args["critic"] = MidSteppedCritic(args["n_steps"])
-    args["critic"].learning_rate_scheme = SteppedLearningRateScheme(args["critic"].core)
+    args["critic"].learning_rate_scheme = SteppedMonteLearningRateScheme(args["critic"].core)
 
 def imtc(args):
     args["critic"] = InexactMidTrajCritic()
-    args["critic"].learning_rate_scheme = TrajLearningRateScheme(args["critic"].core)
+    args["critic"].learning_rate_scheme = TrajTabularLearningRateScheme(args["critic"].core)
 
 def imsc(args):
     args["critic"] = InexactMidSteppedCritic(args["n_steps"])
-    args["critic"].learning_rate_scheme = SteppedLearningRateScheme(args["critic"].core)
+    args["critic"].learning_rate_scheme = SteppedTabularLearningRateScheme(args["critic"].core)
 
 def qtc(args):
     args["critic"] = QTrajCritic()
-    args["critic"].learning_rate_scheme = TrajLearningRateScheme(args["critic"].core)
+    args["critic"].learning_rate_scheme = TrajTabularLearningRateScheme(args["critic"].core)
 
 def qsc(args):
     args["critic"] = QSteppedCritic(args["n_steps"])
-    args["critic"].learning_rate_scheme = SteppedLearningRateScheme(args["critic"].core)
+    args["critic"].learning_rate_scheme = SteppedTabularLearningRateScheme(args["critic"].core)
 
 def biqtc(args):
     args["critic"] = BiQTrajCritic()
-    args["critic"].learning_rate_scheme = TrajLearningRateScheme(args["critic"].core)
+    args["critic"].learning_rate_scheme = TrajTabularLearningRateScheme(args["critic"].core)
 
 def biqsc(args):
     args["critic"] = BiQSteppedCritic(args["n_steps"])
-    args["critic"].learning_rate_scheme = SteppedLearningRateScheme(args["critic"].core)
+    args["critic"].learning_rate_scheme = SteppedTabularLearningRateScheme(args["critic"].core)
 
 def uqtc(args):
     args["critic"] = UqTrajCritic()
-    args["critic"].u_critic.learning_rate_scheme = TrajLearningRateScheme(args["critic"].u_critic.core)
-    args["critic"].q_critic.learning_rate_scheme = TrajLearningRateScheme(args["critic"].q_critic.core)
+    args["critic"].u_critic.learning_rate_scheme = TrajTabularLearningRateScheme(args["critic"].u_critic.core, True)
+    args["critic"].q_critic.learning_rate_scheme = TrajTabularLearningRateScheme(args["critic"].q_critic.core)
 
 
 def uqsc(args):
     args["critic"] = UqSteppedCritic(args["n_steps"])
-    args["critic"].u_critic.learning_rate_scheme = SteppedLearningRateScheme(args["critic"].u_critic.core)
-    args["critic"].q_critic.learning_rate_scheme = SteppedLearningRateScheme(args["critic"].q_critic.core)
+    args["critic"].u_critic.learning_rate_scheme = SteppedTabularLearningRateScheme(args["critic"].u_critic.core, True)
+    args["critic"].q_critic.learning_rate_scheme = SteppedTabularLearningRateScheme(args["critic"].q_critic.core)
 
 
 def atc(args):
     args["critic"] = ATrajCritic()
-    args["critic"].v_critic.learning_rate_scheme = TrajLearningRateScheme(args["critic"].v_critic.core)
-    args["critic"].q_critic.learning_rate_scheme = TrajLearningRateScheme(args["critic"].q_critic.core)
+    args["critic"].v_critic.learning_rate_scheme = TrajTabularLearningRateScheme(args["critic"].v_critic.core, True)
+    args["critic"].q_critic.learning_rate_scheme = TrajTabularLearningRateScheme(args["critic"].q_critic.core)
 
 
 def asc(args):
     args["critic"] = ASteppedCritic(args["n_steps"])
-    args["critic"].v_critic.learning_rate_scheme = SteppedLearningRateScheme(args["critic"].v_critic.core)
-    args["critic"].q_critic.learning_rate_scheme = SteppedLearningRateScheme(args["critic"].q_critic.core)
+    args["critic"].v_critic.learning_rate_scheme = SteppedTabularLearningRateScheme(args["critic"].v_critic.core, True)
+    args["critic"].q_critic.learning_rate_scheme = SteppedTabularLearningRateScheme(args["critic"].q_critic.core)
