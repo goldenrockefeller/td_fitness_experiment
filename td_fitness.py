@@ -618,8 +618,6 @@ class QTrajCritic(AveragedTrajCritic):
 
 class QSteppedCritic(AveragedSteppedCritic):
 
-
-
     def update(self, states, actions, rewards):
         n_steps = len(states)
 
@@ -645,7 +643,7 @@ class QSteppedCritic(AveragedSteppedCritic):
                 )
             )
 
-class BiQTrajCritic(AveragedTrajCritic):
+class BiQTrajCritic(TrajCritic):
 
     def update(self, states, actions, rewards):
         n_steps = len(states)
@@ -694,9 +692,7 @@ class BiQTrajCritic(AveragedTrajCritic):
             )
 
 
-class BiQSteppedCritic(AveragedSteppedCritic):
-
-
+class BiQSteppedCritic(SteppedCritic):
 
     def update(self, states, actions, rewards):
         n_steps = len(states)
