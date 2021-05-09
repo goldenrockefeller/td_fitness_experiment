@@ -75,6 +75,7 @@ cdef class TrajMonteLearningRateScheme():
     @cython.locals(
         rates = list,
         visitation = dict,
+        n_steps = double,
         local_pressure = dict,
         relative_pressure = double,
         sum_of_sqr_rel_pressure = double,
@@ -95,6 +96,7 @@ cdef class SteppedMonteLearningRateScheme():
     @cython.locals(
         rates = list,
         visited = list,
+        n_steps = double,
         relative_pressure = double,
         sum_of_sqr_rel_pressure = double,
         sum_rel_pressure = double,
@@ -178,7 +180,7 @@ cdef class AveragedSteppedCritic(SteppedCritic):
     pass
 
 
-cdef class MidTrajCritic(TrajCritic):
+cdef class MidTrajCritic(AveragedTrajCritic):
 
 
     @cython.locals(
@@ -194,7 +196,7 @@ cdef class MidTrajCritic(TrajCritic):
     )
     cpdef update(self, list states, list actions, list rewards)
 
-cdef class MidSteppedCritic(SteppedCritic):
+cdef class MidSteppedCritic(AveragedSteppedCritic):
 
     @cython.locals(
         n_steps = Py_ssize_t,

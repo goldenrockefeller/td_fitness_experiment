@@ -224,6 +224,7 @@ class TrajMonteLearningRateScheme():
         sum_of_sqr_rel_pressure = 0.
         sum_rel_pressure = 0.
 
+        n_steps = len(states)
 
         for state, action in zip(states, actions):
             self.denoms[(state, action)] *= (
@@ -237,7 +238,7 @@ class TrajMonteLearningRateScheme():
 
 
         for state, action in zip(states, actions):
-            visitation[(state, action)] += 1.
+            visitation[(state, action)] += 1. / n_steps
 
 
         for key in visitation:
@@ -295,6 +296,7 @@ class SteppedMonteLearningRateScheme():
         sum_of_sqr_rel_pressure = 0.
         sum_rel_pressure = 0.
 
+        n_steps = len(states)
 
         for step_id, (state, action) in enumerate(zip(states, actions)):
             self.denoms[(state, action)][step_id] *= (
@@ -306,7 +308,7 @@ class SteppedMonteLearningRateScheme():
             visited.append(((state, action), step_id))
 
         for key, step_id in visited:
-            relative_pressure = 1./ (1. +  self.denoms[key][step_id])
+            relative_pressure = (1./ n_steps) / ((1./ n_steps) +  self.denoms[key][step_id])
 
             sum_of_sqr_rel_pressure += relative_pressure * relative_pressure
             sum_rel_pressure += relative_pressure
@@ -317,7 +319,7 @@ class SteppedMonteLearningRateScheme():
         )
 
         for key, step_id in visited:
-            self.denoms[key][step_id] += step_size
+            self.denoms[key][step_id] += step_size / (n_steps ** 2)
 
 
         for step_id, (state, action) in enumerate(zip(states, actions)):
@@ -512,7 +514,7 @@ class AveragedSteppedCritic(SteppedCritic):
         return SteppedCritic.eval(self, states, actions) / len(states)
 
 
-class MidTrajCritic(TrajCritic):
+class MidTrajCritic(AveragedTrajCritic):
 
     def update(self, states, actions, rewards):
         n_steps = len(states)
@@ -528,10 +530,10 @@ class MidTrajCritic(TrajCritic):
         for step_id in range(n_steps):
             state = states[step_id]
             action = actions[step_id]
-            delta = error * learning_rates[step_id]
+            delta = error * learning_rates[step_id] / n_steps
             self.core[(state, action)] += delta
 
-class MidSteppedCritic(SteppedCritic):
+class MidSteppedCritic(AveragedSteppedCritic):
 
     def update(self, states, actions, rewards):
         n_steps = len(states)
@@ -547,7 +549,7 @@ class MidSteppedCritic(SteppedCritic):
         for step_id in range(n_steps):
             state = states[step_id]
             action = actions[step_id]
-            delta = error * learning_rates[step_id]
+            delta = error * learning_rates[step_id]  / n_steps
             self.core[(state, action)][step_id] += delta
 
 class InexactMidTrajCritic(AveragedTrajCritic):

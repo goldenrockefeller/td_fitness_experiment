@@ -15,7 +15,7 @@ def run():
 
     mods_to_mix = [
         (medium,), # length is 100.
-        (biqtc, biqsc),
+        (mtc, msc),
         (much_noise,) # noise is 10.
     ]
 
