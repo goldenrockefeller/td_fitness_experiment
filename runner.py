@@ -101,7 +101,7 @@ class Runner:
 
             candidate_policy = population[0]
             states, actions, rewards = domain.execute(candidate_policy)
-            print(f"Score: {domain.expected_value(candidate_policy)}")
+            # print(f"Score: {domain.expected_value(candidate_policy)}")
 
 
             score = list_sum(rewards)
