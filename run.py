@@ -32,17 +32,17 @@ def run():
 
 
 if __name__ == '__main__':
-    r = Runner('test', (qtc,))
-    r.new_run()
-    # n_processes = int(sys.argv[1])
-    # print(f"Number of processes: {n_processes}")
-    #
-    # processes = [Process(target = run) for _ in range(n_processes)]
-    #
-    # for process in processes:
-    #     process.start()
-    #     sleep(2)
-    #
-    #
-    # for process in processes:
-    #     process.join()
+    # r = Runner('test', (qtc,))
+    # r.new_run()
+    n_processes = int(sys.argv[1])
+    print(f"Number of processes: {n_processes}")
+
+    processes = [Process(target = run) for _ in range(n_processes)]
+
+    for process in processes:
+        process.start()
+        sleep(2)
+
+
+    for process in processes:
+        process.join()

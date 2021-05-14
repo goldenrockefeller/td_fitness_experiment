@@ -703,7 +703,7 @@ class BiQTrajCritic(TrajCritic):
                 learning_rates[-1]
                 * (
                     rewards[-1]
-                    + step_evals[-2]
+                    + 0.5 * step_evals[-2]
                     - step_evals[-1]
                 )
             )
@@ -712,7 +712,7 @@ class BiQTrajCritic(TrajCritic):
                 learning_rates[0]
                 * (
                     rewards[0]
-                    + step_evals[1]
+                    + 0.5 * step_evals[1]
                     - step_evals[0]
                 )
             )
@@ -767,7 +767,7 @@ class BiQSteppedCritic(SteppedCritic):
                 learning_rates[-1]
                 * (
                     rewards[-1]
-                    + step_evals[-2]
+                    + 0.5 * step_evals[-2]
                     - step_evals[-1]
                 )
             )
@@ -776,7 +776,7 @@ class BiQSteppedCritic(SteppedCritic):
                 learning_rates[0]
                 * (
                     rewards[0]
-                    + step_evals[1]
+                    + 0.5 * step_evals[1]
                     - step_evals[0]
                 )
             )
