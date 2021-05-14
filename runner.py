@@ -150,12 +150,30 @@ class Runner:
             writer.writerow(['critic_score_losses'] + critic_score_losses)
             writer.writerow(['critic_expected_return_losses'] + critic_expected_return_losses)
 
-            writer.writerow(['Critic(State.UP, Action.A)'] + [critic.core[(State.UP, Action.A)]])
-            writer.writerow(['Critic(State.UP, Action.B)'] + [critic.core[(State.UP, Action.B)]])
-            writer.writerow(['Critic(State.HOME, Action.A)'] + [critic.core[(State.HOME, Action.A)]])
-            writer.writerow(['Critic(State.HOME, Action.B)'] + [critic.core[(State.HOME, Action.B)]])
-            writer.writerow(['Critic(State.DOWN, Action.A)'] + [critic.core[(State.DOWN, Action.A)]])
-            writer.writerow(['Critic(State.DOWN, Action.B)'] + [critic.core[(State.DOWN, Action.B)]])
+            try:
+                writer.writerow(['Critic(State.UP, Action.A)'] + [critic.core[(State.UP, Action.A)]])
+                writer.writerow(['Critic(State.UP, Action.B)'] + [critic.core[(State.UP, Action.B)]])
+                writer.writerow(['Critic(State.HOME, Action.A)'] + [critic.core[(State.HOME, Action.A)]])
+                writer.writerow(['Critic(State.HOME, Action.B)'] + [critic.core[(State.HOME, Action.B)]])
+                writer.writerow(['Critic(State.DOWN, Action.A)'] + [critic.core[(State.DOWN, Action.A)]])
+                writer.writerow(['Critic(State.DOWN, Action.B)'] + [critic.core[(State.DOWN, Action.B)]])
+            except:
+
+                try:
+                    writer.writerow(['Critic(State.UP, Action.A)'] + [critic.q_critic.core[(State.UP, Action.A)] + critic.u_critic.core[State.UP]])
+                    writer.writerow(['Critic(State.UP, Action.B)'] + [critic.q_critic.core[(State.UP, Action.B)] + critic.u_critic.core[State.UP]])
+                    writer.writerow(['Critic(State.HOME, Action.A)'] + [critic.q_critic.core[(State.HOME, Action.A)] + critic.u_critic.core[State.HOME]])
+                    writer.writerow(['Critic(State.HOME, Action.B)'] + [critic.q_critic.core[(State.HOME, Action.B)] + critic.u_critic.core[State.HOME]])
+                    writer.writerow(['Critic(State.DOWN, Action.A)'] + [critic.q_critic.core[(State.DOWN, Action.A)] + critic.u_critic.core[State.DOWN]])
+                    writer.writerow(['Critic(State.DOWN, Action.B)'] + [critic.q_critic.core[(State.DOWN, Action.B)] + critic.u_critic.core[State.DOWN]])
+                except:
+                    writer.writerow(['Critic(State.UP, Action.A)'] + [critic.q_critic.core[(State.UP, Action.A)] + critic.v_critic.core[State.UP]])
+                    writer.writerow(['Critic(State.UP, Action.B)'] + [critic.q_critic.core[(State.UP, Action.B)] + critic.v_critic.core[State.UP]])
+                    writer.writerow(['Critic(State.HOME, Action.A)'] + [critic.q_critic.core[(State.HOME, Action.A)] + critic.v_critic.core[State.HOME]])
+                    writer.writerow(['Critic(State.HOME, Action.B)'] + [critic.q_critic.core[(State.HOME, Action.B)] + critic.v_critic.core[State.HOME]])
+                    writer.writerow(['Critic(State.DOWN, Action.A)'] + [critic.q_critic.core[(State.DOWN, Action.A)] + critic.v_critic.core[State.DOWN]])
+                    writer.writerow(['Critic(State.DOWN, Action.B)'] + [critic.q_critic.core[(State.DOWN, Action.B)] + critic.v_critic.core[State.DOWN]])
+
 
             writer.writerow(['Policy(State.UP, Action.A)'] + [policy[State.UP]])
             writer.writerow(['Policy(State.UP, Action.B)'] + [1. - policy[State.UP]])
