@@ -1,4 +1,5 @@
 from td_fitness import *
+import sys
 
 class Runner:
     def __init__(self, experiment_name, setup_funcs):
@@ -39,6 +40,7 @@ class Runner:
             f"stat run #: {self.stat_runs_completed}\n"
             "datetime: {datetime_str}\n\n"
             .format(**locals()) )
+        sys.stdout.flush()
 
         args = {"n_steps" : 100}
 
@@ -99,7 +101,8 @@ class Runner:
 
             candidate_policy = population[0]
             states, actions, rewards = domain.execute(candidate_policy)
-            print(f"Score: {domain.expected_value(candidate_policy)}")
+            # print(f"Score: {domain.expected_value(candidate_policy)}")
+
 
             score = list_sum(rewards)
             expected_return = domain.expected_value(candidate_policy)
