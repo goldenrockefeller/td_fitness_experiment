@@ -592,10 +592,24 @@ class InexactMidSteppedCritic(AveragedSteppedCritic):
 
 class QTrajCritic(AveragedTrajCritic):
 
+    def max_step_evals(self, states):
+        evals = [0. for _ in range(len(states))]
+        for step_id in range(len(states)):
+            state = states[step_id]
+            max_eval = self.core[(state, Action.A)]
+
+            for action in [Action.A, Action.B]:
+                state_evals = self.core[(state, action)]
+                if state_evals > max_eval:
+                    max_eval = state_evals
+            evals[step_id] = max_eval
+        return evals
+
     def update(self, states, actions, rewards):
         n_steps = len(states)
 
         step_evals = self.step_evals(states, actions)
+        max_step_evals = self.max_step_evals(states)
 
         learning_rates = self.learning_rate_scheme.learning_rates(states, actions)
 
@@ -620,10 +634,26 @@ class QTrajCritic(AveragedTrajCritic):
 
 class QSteppedCritic(AveragedSteppedCritic):
 
+
+    def max_step_evals(self, states):
+        evals = [0. for _ in range(len(states))]
+        for step_id in range(len(states)):
+            state = states[step_id]
+            max_eval = self.core[(state, Action.A)][step_id]
+
+            for action in [Action.A, Action.B]:
+                state_evals = self.core[(state, action)][step_id]
+                if state_evals > max_eval:
+                    max_eval = state_evals
+            evals[step_id] = max_eval
+        return evals
+
     def update(self, states, actions, rewards):
         n_steps = len(states)
 
         step_evals = self.step_evals(states, actions)
+
+        max_step_evals = self.max_step_evals(states)
 
         learning_rates = self.learning_rate_scheme.learning_rates(states, actions)
 
@@ -647,10 +677,24 @@ class QSteppedCritic(AveragedSteppedCritic):
 
 class BiQTrajCritic(TrajCritic):
 
+    def max_step_evals(self, states):
+        evals = [0. for _ in range(len(states))]
+        for step_id in range(len(states)):
+            state = states[step_id]
+            max_eval = self.core[(state, Action.A)]
+
+            for action in [Action.A, Action.B]:
+                state_evals = self.core[(state, action)]
+                if state_evals > max_eval:
+                    max_eval = state_evals
+            evals[step_id] = max_eval
+        return evals
+
     def update(self, states, actions, rewards):
         n_steps = len(states)
 
         step_evals = self.step_evals(states, actions)
+        max_step_evals = self.max_step_evals(states)
 
         learning_rates = self.learning_rate_scheme.learning_rates(states, actions)
 
@@ -696,10 +740,25 @@ class BiQTrajCritic(TrajCritic):
 
 class BiQSteppedCritic(SteppedCritic):
 
+
+    def max_step_evals(self, states):
+        evals = [0. for _ in range(len(states))]
+        for step_id in range(len(states)):
+            state = states[step_id]
+            max_eval = self.core[(state, Action.A)][step_id]
+
+            for action in [Action.A, Action.B]:
+                state_evals = self.core[(state, action)][step_id]
+                if state_evals > max_eval:
+                    max_eval = state_evals
+            evals[step_id] = max_eval
+        return evals
+
     def update(self, states, actions, rewards):
         n_steps = len(states)
 
         step_evals = self.step_evals(states, actions)
+        max_step_evals = self.max_step_evals(states)
 
         learning_rates = self.learning_rate_scheme.learning_rates(states, actions)
 
@@ -1014,12 +1073,12 @@ class UqSteppedCritic(UqBaseCritic):
 
 class Domain:
     def __init__(self):
-        self.n_steps = 50
+        self.n_steps = 100
         self.max_score = 0
         self.reward_home_a = 0.0
-        self.reward_home_b = 10.
+        self.reward_home_b = 5.
         self.reward_up_a = 1.
-        self.reward_down_a = 0.0
+        self.reward_down_a = 0.
         self.return_home_prob = 0.2
         self.domain_noise = 0.0
 
@@ -1280,37 +1339,137 @@ def population_from_phenotypes(phenotypes):
     return population
 
 
-def new_policy():
+def new_policy_basic():
     policy = {}
-    policy[State.UP] = 0.5
-    policy[State.DOWN] = 0.5
-    policy[State.HOME] = 0.5
+    policy[State.UP] = 1.0
+    policy[State.HOME] = 1.0
+    policy[State.DOWN] = 0.0
     return policy
 
-def mutant(phenotype, mutation_factor):
-    new_policy = phenotype["policy"].copy()
-    new_policy[State.UP] += mutation_factor * random_normal()
-    new_policy[State.DOWN] +=  mutation_factor * random_normal()
-    new_policy[State.HOME] += mutation_factor * random_normal()
 
-    new_policy[State.UP] = min(1., max(0., new_policy[State.UP]))
-    new_policy[State.DOWN] = min(1., max(0., new_policy[State.DOWN]))
-    new_policy[State.HOME] = min(1., max(0., new_policy[State.HOME]))
+def new_policy(dist):
+    policy = {}
+    policy[State.UP] = np.random.dirichlet(dist[State.UP])[0]
+    policy[State.HOME] = np.random.dirichlet(dist[State.HOME])[0]
+    policy[State.DOWN] = np.random.dirichlet(dist[State.DOWN])[0]
+    return policy
 
-    return {"policy" : new_policy}
+# def update_dist(dist, speed, phenotypes):
+#
+#     for i in range(len(phenotypes) // 2):
+#         if phenotypes[i]["fitness"] > phenotypes[i+1]["fitness"]:
+#             better_policy = phenotypes[i]["policy"]
+#         else:
+#             better_policy = phenotypes[i+1]["policy"]
+#
+#         for state in better_policy.keys():
+#             dist[state][0] += speed * better_policy[state]
+#             dist[state][1] += speed * (1. - better_policy[state])
 
+def update_dist(dist, speed, sustain, phenotypes):
 
-def binary_tornament(phenotypes, mutation_factor):
-    shuffle(phenotypes)
-
-    new_phenotypes = []
+    phenotypes.sort(reverse = True, key = lambda phenotype : phenotype["fitness"])
 
     for i in range(len(phenotypes) // 2):
-        if phenotypes[i]["fitness"] > phenotypes[i+1]["fitness"]:
-            new_phenotypes.append(phenotypes[i])
-            new_phenotypes.append(mutant(phenotypes[i], mutation_factor))
-        else:
-            new_phenotypes.append(phenotypes[i+1])
-            new_phenotypes.append(mutant(phenotypes[i+1], mutation_factor))
+        policy = phenotypes[i]["policy"]
 
-    return new_phenotypes
+        for state in policy.keys():
+            dist[state][0] += speed * policy[state]
+            dist[state][1] += speed * (1. - policy[state])
+
+    for state in policy.keys():
+        dist[state][0] *= sustain
+        dist[state][1] *= sustain
+
+# def update_probs(probs, denoms, phenotypes):
+#     new_probs = probs.copy()
+#     shuffle(phenotypes)
+
+
+# def new_policy(probs, parameters):
+#     policy = {}
+#     p = 100
+#     d = 200
+#     policy[State.UP] = 1.0 if random_uniform() < (probs[State.UP] + p) / (denoms + d) else 0.
+#     policy[State.HOME] = 1.0 if random_uniform() <( probs[State.HOME] + p) / (denoms + d) else 0.
+#     policy[State.DOWN] = 1.0 if random_uniform() <( probs[State.DOWN]  + p) / (denoms + d) else 0.
+#     return policy
+#
+# def update_probs(probs, denoms, phenotypes):
+#     new_probs = probs.copy()
+#     shuffle(phenotypes)
+#
+#
+#     for i in range(len(phenotypes) // 2):
+#         if phenotypes[i]["fitness"] > phenotypes[i+1]["fitness"]:
+#             better_policy = phenotypes[i]["policy"]
+#         else:
+#             better_policy = phenotypes[i+1]["policy"]
+#
+#         for state in better_policy.keys():
+#             new_probs[state] += better_policy[state]
+#         denoms += 1
+#
+#     for state in new_probs.keys():
+#         new_probs[state] *= 0.99
+#
+#     denoms *= 0.99
+#
+#     return new_probs, denoms
+#
+# # def update_probs(probs, denoms, phenotypes):
+# #     new_probs = probs.copy()
+# #
+# #     phenotypes.sort(reverse = True, key = lambda phenotype : phenotype["fitness"])
+# #
+# #     for i in range(len(phenotypes) // 2):
+# #         policy = phenotypes[i]["policy"]
+# #
+# #         for state in policy.keys():
+# #             new_probs[state] += policy[state]
+# #         denoms += 1
+# #
+# #     for state in new_probs.keys():
+# #         new_probs[state] *= 0.99
+# #
+# #     denoms *= 0.99
+# #
+# #     return new_probs, denoms
+#
+# #
+# # def mutant(phenotype, mutation_factor):
+# #     new_policy = phenotype["policy"].copy()
+# #
+#     for state in [State.UP, State.DOWN, State.HOME]:
+#         if random_uniform() < mutation_factor:
+#             if random_uniform() < 0.5:
+#                 new_policy[state] = 0.
+#             else:
+#                 new_policy[state] = 1.
+#
+#     return {"policy" : new_policy}
+
+#
+# def binary_tornament(phenotypes, mutation_factor):
+#     shuffle(phenotypes)
+#
+#     new_phenotypes = []
+#     selection_rate = 0.2
+#
+#     for i in range(len(phenotypes) // 2):
+#         if random_uniform() < selection_rate:
+#             if phenotypes[i]["fitness"] > phenotypes[i+1]["fitness"]:
+#                 new_phenotypes.append(phenotypes[i])
+#                 new_phenotypes.append(mutant(phenotypes[i], mutation_factor))
+#             else:
+#                 new_phenotypes.append(phenotypes[i+1])
+#                 new_phenotypes.append(mutant(phenotypes[i+1], mutation_factor))
+#         else:
+#             if random_uniform() < 0.5:
+#                 new_phenotypes.append(phenotypes[i])
+#                 new_phenotypes.append(mutant(phenotypes[i], mutation_factor))
+#             else:
+#                 new_phenotypes.append(phenotypes[i+1])
+#                 new_phenotypes.append(mutant(phenotypes[i+1], mutation_factor))
+#
+#     return new_phenotypes

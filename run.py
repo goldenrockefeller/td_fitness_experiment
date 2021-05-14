@@ -9,14 +9,12 @@ import sys
 
 
 def run():
-    experiment_name = "B1"
+    experiment_name = "TD1"
     n_stats_run_per_process = 1
 
 
     mods_to_mix = [
-        (medium,), # length is 100.
-        (mtc, msc),
-        (much_noise,) # noise is 10.
+        (mtc, msc, imtc, imsc, qtc, qsc, atc, asc, uqtc, uqsc, biqtc, biqsc),
     ]
 
 
@@ -34,6 +32,8 @@ def run():
 
 
 if __name__ == '__main__':
+    # r = Runner('test', (qtc,))
+    # r.new_run()
     n_processes = int(sys.argv[1])
     print(f"Number of processes: {n_processes}")
 

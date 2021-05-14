@@ -1,8 +1,5 @@
 from td_fitness import *
 
-
-
-
 class Runner:
     def __init__(self, experiment_name, setup_funcs):
         self.setup_funcs = setup_funcs
@@ -43,23 +40,32 @@ class Runner:
             "datetime: {datetime_str}\n\n"
             .format(**locals()) )
 
-        args = {}
+        args = {"n_steps" : 100}
 
         for setup_func in self.setup_funcs:
             setup_func(args)
 
         critic = args["critic"]
         n_steps = args["n_steps"]
-        domain_noise = args["domain_noise"]
+        domain_noise =1.
 
         domain = Domain()
         domain.domain_noise = domain_noise
         domain.n_steps = n_steps
         n_epochs = 10 * n_steps
-        mutation_factor = 0.01
+        mutation_factor = 1.
         n_policies = 50
 
-        population = [new_policy() for _ in range(n_policies)]
+
+        speed = 0.001
+        precision = 0.1
+        sustain = 1.
+        dist = {}
+        dist[State.UP] = [precision, precision]
+        dist[State.HOME] = [precision, precision]
+        dist[State.DOWN] = [precision, precision]
+
+        population = [new_policy(dist) for _ in range(n_policies)]
 
         n_epochs_elapsed = list(range(1, n_epochs + 1))
         n_training_episodes_elapsed = [n_epochs_elapsed[epoch_id] * n_policies for epoch_id in range(n_epochs)]
@@ -73,7 +79,9 @@ class Runner:
         critic_expected_return_losses = []
 
 
-        for epoch in range(n_epochs):
+        for epoch_id in range(n_epochs):
+            mutation_factor = 1. / (1. + epoch_id / 10.)
+
             phenotypes = phenotypes_from_population(population)
 
             new_critic = critic.copy()
@@ -86,12 +94,12 @@ class Runner:
                 phenotype["fitness"] = fitness
 
             critic = new_critic
-            phenotypes = binary_tornament(phenotypes, mutation_factor)
-            population = population_from_phenotypes(phenotypes)
+            update_dist(dist, speed, sustain, phenotypes)
+            population = [new_policy(dist) for _ in range(n_policies)]
 
             candidate_policy = population[0]
             states, actions, rewards = domain.execute(candidate_policy)
-            #print(f"Score: {domain.expected_value(candidate_policy)}")
+            print(f"Score: {domain.expected_value(candidate_policy)}")
 
             score = list_sum(rewards)
             expected_return = domain.expected_value(candidate_policy)
@@ -139,7 +147,23 @@ class Runner:
             writer.writerow(['critic_score_losses'] + critic_score_losses)
             writer.writerow(['critic_expected_return_losses'] + critic_expected_return_losses)
 
+            writer.writerow(['Critic(State.UP, Action.A)'] + [critic.core[(State.UP, Action.A)]])
+            writer.writerow(['Critic(State.UP, Action.B)'] + [critic.core[(State.UP, Action.B)]])
+            writer.writerow(['Critic(State.HOME, Action.A)'] + [critic.core[(State.HOME, Action.A)]])
+            writer.writerow(['Critic(State.HOME, Action.B)'] + [critic.core[(State.HOME, Action.B)]])
+            writer.writerow(['Critic(State.DOWN, Action.A)'] + [critic.core[(State.DOWN, Action.A)]])
+            writer.writerow(['Critic(State.DOWN, Action.B)'] + [critic.core[(State.DOWN, Action.B)]])
+
+            writer.writerow(['Policy(State.UP, Action.A)'] + [policy[State.UP]])
+            writer.writerow(['Policy(State.UP, Action.B)'] + [1. - policy[State.UP]])
+            writer.writerow(['Policy(State.HOME, Action.A)'] + [policy[State.HOME]])
+            writer.writerow(['Policy(State.HOME, Action.B)'] + [1. - policy[State.HOME]])
+            writer.writerow(['Policy(State.DOWN, Action.A)'] + [policy[State.DOWN]])
+            writer.writerow(['Policy(State.DOWN, Action.B)'] + [1. - policy[State.DOWN]])
+
+
         self.stat_runs_completed += 1
 
 
         self.critic = critic
+        self.dist = dist
