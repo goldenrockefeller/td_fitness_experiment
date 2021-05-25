@@ -675,7 +675,7 @@ class QSteppedCritic(AveragedSteppedCritic):
                 )
             )
 
-class BiQTrajCritic(TrajCritic):
+class BiQTrajCritic(AveragedTrajCritic):
 
     def max_step_evals(self, states):
         evals = [0. for _ in range(len(states))]
@@ -738,7 +738,7 @@ class BiQTrajCritic(TrajCritic):
             )
 
 
-class BiQSteppedCritic(SteppedCritic):
+class BiQSteppedCritic(AveragedSteppedCritic):
 
 
     def max_step_evals(self, states):
