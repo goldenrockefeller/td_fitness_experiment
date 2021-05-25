@@ -14,7 +14,7 @@ def run():
 
 
     mods_to_mix = [
-        (biqtc, biqsc),
+        (uqtc, atc),
     ]
 
 
@@ -32,7 +32,7 @@ def run():
 
 
 if __name__ == '__main__':
-    # r = Runner('test', (biqtc,))
+    # r = Runner('test', (uqtc,))
     # r.new_run()
     n_processes = int(sys.argv[1])
     print(f"Number of processes: {n_processes}")
