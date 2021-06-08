@@ -49,7 +49,7 @@ class Runner:
 
         critic = args["critic"]
         n_steps = args["n_steps"]
-        domain_noise = 0.
+        domain_noise = 10.
 
         domain = Domain()
         domain.domain_noise = domain_noise

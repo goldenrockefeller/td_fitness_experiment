@@ -9,12 +9,13 @@ import sys
 
 
 def run():
-    experiment_name = "TD0"
+    experiment_name = "TDL_N10"
     n_stats_run_per_process = 1
 
 
     mods_to_mix = [
-        (uqtc, atc),
+        (horizon_4, horizon_8, horizon_16, horizon_32),
+        (uqsc, imsc, msc),
     ]
 
 
@@ -32,7 +33,7 @@ def run():
 
 
 if __name__ == '__main__':
-    # r = Runner('test', (uqtc,))
+    # r = Runner('test', (horizon_4,msc))
     # r.new_run()
     n_processes = int(sys.argv[1])
     print(f"Number of processes: {n_processes}")
