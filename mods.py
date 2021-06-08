@@ -30,18 +30,13 @@ def much_noise(args):
 def mega_noise(args):
     args["domain_noise"] = 100.
 
-def set_horizon(horizon):
-    def inner(args):
-        args["horizon"] = horizon
+def set_horizon(args, horizon):
+    args["horizon"] = horizon
 
-    return inner
-
-
-horizon_4 = set_horizon(4)
-horizon_8 = set_horizon(8)
-horizon_16 = set_horizon(16)
-horizon_32 = set_horizon(32)
-
+def horizon_4(args): set_horizon(args, 4)
+def horizon_8(args): set_horizon(args, 8)
+def horizon_16(args): set_horizon(args, 16)
+def horizon_32(args): set_horizon(args, 32)
 
 
 def mtc(args):
