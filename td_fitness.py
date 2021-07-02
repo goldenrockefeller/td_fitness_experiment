@@ -1004,7 +1004,7 @@ class ABaseCritic():
 
 class ATrajCritic(ABaseCritic):
     def __init__(self):
-        self.v_critic = UTrajCritic()
+        self.v_critic = VTrajCritic()
         self.q_critic = QTrajCritic()
 
     def copy(self):
@@ -1016,7 +1016,7 @@ class ATrajCritic(ABaseCritic):
 
 class ASteppedCritic(ABaseCritic):
     def __init__(self, n_steps):
-        self.v_critic = USteppedCritic(n_steps)
+        self.v_critic = VSteppedCritic(n_steps)
         self.q_critic = QSteppedCritic(n_steps)
         self.n_steps = n_steps
 
