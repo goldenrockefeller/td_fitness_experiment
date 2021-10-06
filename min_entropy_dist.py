@@ -5,7 +5,7 @@ from numpy import array, zeros, inf, exp, minimum, maximum, sum,  abs, where, is
 from numpy.random import dirichlet
 from numpy import finfo
 
-from numba import jit
+
 
 
 def dist_entropy(dist):
