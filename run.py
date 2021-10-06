@@ -6,16 +6,16 @@ import random
 from multiprocessing import Process
 from time import sleep
 import sys
+import cProfile, pstats
 
 
 def run():
-    experiment_name = "TDL_N10"
+    experiment_name = "TD_AA"
     n_stats_run_per_process = 1
 
 
     mods_to_mix = [
-        (horizon_4, horizon_8, horizon_16, horizon_32),
-        (uqsc, imsc, msc),
+        (noc, qsc, uqsc, asc, imsc, msc, mtc, imtc),
     ]
 
 
@@ -33,8 +33,18 @@ def run():
 
 
 if __name__ == '__main__':
-    # r = Runner('test', (horizon_4,msc))
+    # r = Runner('test', (imtc,))
+    #
+    # # profiler = cProfile.Profile()
+    # # profiler.enable()
+    #
     # r.new_run()
+    #
+    # # profiler.disable()
+    # # stats = pstats.Stats(profiler).sort_stats('cumtime')
+    # # stats.print_stats()
+
+
     n_processes = int(sys.argv[1])
     print(f"Number of processes: {n_processes}")
 

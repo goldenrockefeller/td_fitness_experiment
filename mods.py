@@ -1,107 +1,123 @@
 from td_fitness import *
 
 
-def none(args):
-    args["critic"] = MidTrajCritic()
-    args["n_steps"] = 50
-    args["domain_noise"] = 0.
+def all_observation_actions():
+    for observation in all_observations():
+        for action in all_actions():
+            yield (observation, action)
 
-def short(args):
-    args["n_steps"] = 50
+def traj_q_model(n_steps):
+    model = {observation_action: 0. for observation_action in all_observation_actions()}
+    return model
 
-def medium(args):
-    args["n_steps"] = 100
+def traj_v_model(n_steps):
+    model = {observation: 0. for observation in all_observations()}
+    return model
 
-def long(args):
-    args["n_steps"] = 500
 
-def no_noise(args):
-    args["domain_noise"] = 0.
+def stepped_q_model(n_steps):
+    model = {observation_action: [0.] * n_steps for observation_action in all_observation_actions()}
+    return model
 
-def little_noise(args):
-    args["domain_noise"] = 1./16
+def stepped_v_model(n_steps):
+    model = {observation: [0.] * n_steps for observation in all_observations()}
+    return model
 
-def some_noise(args):
-    args["domain_noise"] = 1./4
 
-def much_noise(args):
-    args["domain_noise"] = 10.
-
-def mega_noise(args):
-    args["domain_noise"] = 100.
-
-def set_horizon(args, horizon):
-    args["horizon"] = horizon
-
-def horizon_4(args): set_horizon(args, 4)
-def horizon_8(args): set_horizon(args, 8)
-def horizon_16(args): set_horizon(args, 16)
-def horizon_32(args): set_horizon(args, 32)
-
+def noc(args):
+    args["critic"] =  None
 
 def mtc(args):
-    args["critic"] = MidTrajCritic()
+    n_steps = args["n_steps"]
+    model = traj_q_model(n_steps)
+    args["critic"] = MidTrajCritic(model)
     args["critic"].learning_rate_scheme = TrajMonteLearningRateScheme(args["critic"].core)
     args["critic"].time_horizon = args["horizon"]
 
 def msc(args):
-    args["critic"] = MidSteppedCritic(args["n_steps"])
+    n_steps = args["n_steps"]
+    model = stepped_q_model(n_steps)
+    args["critic"] = MidSteppedCritic(model)
     args["critic"].learning_rate_scheme = SteppedMonteLearningRateScheme(args["critic"].core)
     args["critic"].time_horizon = args["horizon"]
 
 def imtc(args):
-    args["critic"] = InexactMidTrajCritic()
+    n_steps = args["n_steps"]
+    model = traj_q_model(n_steps)
+    args["critic"] = InexactMidTrajCritic(model)
     args["critic"].learning_rate_scheme = TrajTabularLearningRateScheme(args["critic"].core)
     args["critic"].time_horizon = args["horizon"]
 
 def imsc(args):
-    args["critic"] = InexactMidSteppedCritic(args["n_steps"])
+    n_steps = args["n_steps"]
+    model = stepped_q_model(n_steps)
+    args["critic"] = InexactMidSteppedCritic(model)
     args["critic"].learning_rate_scheme = SteppedTabularLearningRateScheme(args["critic"].core)
     args["critic"].time_horizon = args["horizon"]
 
 def qtc(args):
-    args["critic"] = QTrajCritic()
+    n_steps = args["n_steps"]
+    model = traj_q_model(n_steps)
+    args["critic"] = QTrajCritic(model)
     args["critic"].learning_rate_scheme = TrajTabularLearningRateScheme(args["critic"].core)
     args["critic"].time_horizon = args["horizon"]
 
 def qsc(args):
-    args["critic"] = QSteppedCritic(args["n_steps"])
+    n_steps = args["n_steps"]
+    model = stepped_q_model(n_steps)
+    args["critic"] = QSteppedCritic(model)
     args["critic"].learning_rate_scheme = SteppedTabularLearningRateScheme(args["critic"].core)
-
     args["critic"].time_horizon = args["horizon"]
+
 def biqtc(args):
-    args["critic"] = BiQTrajCritic()
+    n_steps = args["n_steps"]
+    model = traj_q_model(n_steps)
+    args["critic"] = BiQTrajCritic(model)
     args["critic"].learning_rate_scheme = TrajTabularLearningRateScheme(args["critic"].core)
     args["critic"].time_horizon = args["horizon"]
 
 def biqsc(args):
-    args["critic"] = BiQSteppedCritic(args["n_steps"])
+    n_steps = args["n_steps"]
+    model = stepped_q_model(n_steps)
+    args["critic"] = BiQSteppedCritic(model)
     args["critic"].learning_rate_scheme = SteppedTabularLearningRateScheme(args["critic"].core)
     args["critic"].time_horizon = args["horizon"]
 
 def uqtc(args):
-    args["critic"] = UqTrajCritic()
+    n_steps = args["n_steps"]
+    q_model = traj_q_model(n_steps)
+    u_model = traj_v_model(n_steps)
+    args["critic"] = UqTrajCritic(q_model, u_model)
     args["critic"].u_critic.learning_rate_scheme = TrajTabularLearningRateScheme(args["critic"].u_critic.core, True)
     args["critic"].q_critic.learning_rate_scheme = TrajTabularLearningRateScheme(args["critic"].q_critic.core)
     args["critic"].u_critic.time_horizon = args["horizon"]
     args["critic"].q_critic.time_horizon = args["horizon"]
 
 def uqsc(args):
-    args["critic"] = UqSteppedCritic(args["n_steps"])
+    n_steps = args["n_steps"]
+    q_model = stepped_q_model(n_steps)
+    u_model = stepped_v_model(n_steps)
+    args["critic"] = UqSteppedCritic(q_model, u_model)
     args["critic"].u_critic.learning_rate_scheme = SteppedTabularLearningRateScheme(args["critic"].u_critic.core, True)
     args["critic"].q_critic.learning_rate_scheme = SteppedTabularLearningRateScheme(args["critic"].q_critic.core)
     args["critic"].u_critic.time_horizon = args["horizon"]
     args["critic"].q_critic.time_horizon = args["horizon"]
 
 def atc(args):
-    args["critic"] = ATrajCritic()
+    n_steps = args["n_steps"]
+    q_model = traj_q_model(n_steps)
+    v_model = traj_v_model(n_steps)
+    args["critic"] = ATrajCritic(q_model, v_model)
     args["critic"].v_critic.learning_rate_scheme = TrajTabularLearningRateScheme(args["critic"].v_critic.core, True)
     args["critic"].q_critic.learning_rate_scheme = TrajTabularLearningRateScheme(args["critic"].q_critic.core)
     args["critic"].v_critic.time_horizon = args["horizon"]
     args["critic"].q_critic.time_horizon = args["horizon"]
 
 def asc(args):
-    args["critic"] = ASteppedCritic(args["n_steps"])
+    n_steps = args["n_steps"]
+    q_model = stepped_q_model(n_steps)
+    v_model = stepped_v_model(n_steps)
+    args["critic"] = ASteppedCritic(q_model, v_model)
     args["critic"].v_critic.learning_rate_scheme = SteppedTabularLearningRateScheme(args["critic"].v_critic.core, True)
     args["critic"].q_critic.learning_rate_scheme = SteppedTabularLearningRateScheme(args["critic"].q_critic.core)
     args["critic"].v_critic.time_horizon = args["horizon"]
