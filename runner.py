@@ -57,7 +57,6 @@ class Runner:
         domain.domain_noise = domain_noise
         domain.n_steps = n_steps
         n_epochs =  n_steps
-        mutation_factor = 1.
         n_policies = 50
 
         dist = {}
@@ -82,7 +81,6 @@ class Runner:
 
 
         for epoch_id in range(n_epochs):
-            mutation_factor = 1. / (1. + epoch_id / 10.)
 
             phenotypes = phenotypes_from_population(population)
 

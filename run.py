@@ -33,27 +33,27 @@ def run():
 
 
 if __name__ == '__main__':
-    # r = Runner('test', (imtc,))
+    r = Runner('test', (noc,))
+
+    # profiler = cProfile.Profile()
+    # profiler.enable()
+
+    r.new_run()
+
+    # profiler.disable()
+    # stats = pstats.Stats(profiler).sort_stats('cumtime')
+    # stats.print_stats()
+
+
+    # n_processes = int(sys.argv[1])
+    # print(f"Number of processes: {n_processes}")
     #
-    # # profiler = cProfile.Profile()
-    # # profiler.enable()
+    # processes = [Process(target = run) for _ in range(n_processes)]
     #
-    # r.new_run()
+    # for process in processes:
+    #     process.start()
+    #     sleep(2)
     #
-    # # profiler.disable()
-    # # stats = pstats.Stats(profiler).sort_stats('cumtime')
-    # # stats.print_stats()
-
-
-    n_processes = int(sys.argv[1])
-    print(f"Number of processes: {n_processes}")
-
-    processes = [Process(target = run) for _ in range(n_processes)]
-
-    for process in processes:
-        process.start()
-        sleep(2)
-
-
-    for process in processes:
-        process.join()
+    #
+    # for process in processes:
+    #     process.join()
